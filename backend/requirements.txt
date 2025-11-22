@@ -16,3 +16,12 @@ django-celery-beat
 scikit-learn
 pandas
 numpy
+redis
+cloudinary
+twilio
+django-environ
+dnspython
+email-validator
+pyjwt
+bcrypt
+python-dotenv
