@@ -9,32 +9,25 @@ from apps.movies.models import Movie
 import uuid
 
 class UserPreference(models.Model):
-    """User's viewing preferences for recommendations"""
-    
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='preferences')
-    
-    # Preferred genres (weighted)
-    favorite_genres = models.JSONField(default=dict)  # {genre_id: weight}
-    
-    # Disliked genres
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='recommendation_preferences')
+
+    favorite_genres = models.JSONField(default=dict)
     disliked_genres = models.JSONField(default=list)
-    
-    # Preferred runtime range
+
     preferred_runtime_min = models.IntegerField(default=80)
     preferred_runtime_max = models.IntegerField(default=180)
-    
-    # Preferred release years
+
     prefer_recent_movies = models.BooleanField(default=True)
     prefer_classic_movies = models.BooleanField(default=False)
-    
-    # Last updated
+
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
-        db_table = 'user_preferences'
-    
+        db_table = "recommendation_user_preferences"
+
     def __str__(self):
-        return f"Preferences for {self.user}"
+        return f"Recommendation Preferences for {self.user}"
+
 
 
 class Recommendation(models.Model):

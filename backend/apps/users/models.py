@@ -86,11 +86,8 @@ class UserActivity(models.Model):
 
 
 class UserPreference(models.Model):
-    """User preferences and settings beyond authentication"""
-    
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='user_preferences')
-    
-    # Notification preferences
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='user_setting_preferences')
+
     email_notifications = models.BooleanField(default=True)
     push_notifications = models.BooleanField(default=True)
     notify_on_follow = models.BooleanField(default=True)
@@ -100,30 +97,28 @@ class UserPreference(models.Model):
     notify_on_new_follower = models.BooleanField(default=True)
     notify_on_chat_request = models.BooleanField(default=True)
     notify_on_match_found = models.BooleanField(default=True)
-    
-    # Content preferences
+
     show_spoilers = models.BooleanField(default=False)
     mature_content = models.BooleanField(default=False)
-    
-    # Language and region
+
     preferred_language = models.CharField(max_length=10, default='en')
     preferred_region = models.CharField(max_length=10, default='US')
-    
-    # App behavior
+
     autoplay_trailers = models.BooleanField(default=True)
     theme_mode = models.CharField(
         max_length=10,
         choices=[('light', 'Light'), ('dark', 'Dark'), ('auto', 'Auto')],
         default='auto'
     )
-    
+
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
-        db_table = 'user_preferences'
-    
+        db_table = "user_settings_preferences"
+
     def __str__(self):
-        return f"Preferences for {self.user.username}"
+        return f"UI Preferences for {self.user.username}"
+
 
 
 class BlockedUser(models.Model):
