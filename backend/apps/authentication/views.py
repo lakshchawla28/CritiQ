@@ -5,19 +5,46 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.utils import timezone
 from datetime import timedelta
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 import random
 
 from .models import User, OTPVerification, FollowRequest, UserFollow, ChatRequest
 from .serializers import (
     UserRegistrationSerializer, OTPVerifySerializer, LoginSerializer,
-    UserProfileSerializer, UsernameSetSerializer
+    UserProfileSerializer, UsernameSetSerializer, LoginResponseSerializer,
+    FollowRequestSerializer, ChatRequestSerializer
 )
 from utils.otp_service import send_otp
 
 
 class RegisterView(APIView):
-    permission_classes = [permissions.AllowAny]
+    """
+    User Registration Endpoint
     
+    Register a new user with email, phone number, and password.
+    An OTP will be sent to the provided phone number for verification.
+    """
+    permission_classes = [permissions.AllowAny]
+    serializer_class = UserRegistrationSerializer
+    
+    @extend_schema(
+        request=UserRegistrationSerializer,
+        responses={
+            201: OpenApiResponse(
+                description="Registration successful",
+                response={
+                    'type': 'object',
+                    'properties': {
+                        'message': {'type': 'string'},
+                        'user_id': {'type': 'string'},
+                        'phone_number': {'type': 'string'}
+                    }
+                }
+            ),
+            400: OpenApiResponse(description="Bad request - validation errors")
+        },
+        tags=['Authentication']
+    )
     def post(self, request):
         serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
@@ -47,8 +74,22 @@ class RegisterView(APIView):
 
 
 class VerifyOTPView(APIView):
-    permission_classes = [permissions.AllowAny]
+    """
+    OTP Verification Endpoint
     
+    Verify the OTP sent to user's phone number during registration.
+    """
+    permission_classes = [permissions.AllowAny]
+    serializer_class = OTPVerifySerializer
+    
+    @extend_schema(
+        request=OTPVerifySerializer,
+        responses={
+            200: LoginResponseSerializer,
+            400: OpenApiResponse(description="Invalid or expired OTP")
+        },
+        tags=['Authentication']
+    )
     def post(self, request):
         serializer = OTPVerifySerializer(data=request.data)
         if serializer.is_valid():
@@ -77,8 +118,24 @@ class VerifyOTPView(APIView):
 
 
 class LoginView(APIView):
-    permission_classes = [permissions.AllowAny]
+    """
+    User Login Endpoint
     
+    Login with email, phone number, or username and password.
+    Returns JWT access and refresh tokens.
+    """
+    permission_classes = [permissions.AllowAny]
+    serializer_class = LoginSerializer
+    
+    @extend_schema(
+        request=LoginSerializer,
+        responses={
+            200: LoginResponseSerializer,
+            401: OpenApiResponse(description="Invalid credentials"),
+            403: OpenApiResponse(description="Account not verified")
+        },
+        tags=['Authentication']
+    )
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
@@ -89,7 +146,7 @@ class LoginView(APIView):
             user = None
             if '@' in identifier:
                 user = User.objects.filter(email=identifier).first()
-            elif identifier.isdigit():
+            elif identifier.startswith('+') or identifier.isdigit():
                 user = User.objects.filter(phone_number=identifier).first()
             else:
                 user = User.objects.filter(username=identifier).first()
@@ -118,9 +175,66 @@ class LoginView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class RefreshTokenView(APIView):
+    """
+    Refresh JWT Token Endpoint
+    
+    Get a new access token using a valid refresh token.
+    """
+    permission_classes = [permissions.AllowAny]
+    
+    @extend_schema(
+        request={
+            'type': 'object',
+            'properties': {
+                'refresh': {'type': 'string'}
+            }
+        },
+        responses={
+            200: OpenApiResponse(
+                description="New access token",
+                response={
+                    'type': 'object',
+                    'properties': {
+                        'access': {'type': 'string'}
+                    }
+                }
+            )
+        },
+        tags=['Authentication']
+    )
+    def post(self, request):
+        refresh_token = request.data.get('refresh')
+        if not refresh_token:
+            return Response({'error': 'Refresh token required'}, 
+                          status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            refresh = RefreshToken(refresh_token)
+            return Response({
+                'access': str(refresh.access_token)
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': 'Invalid refresh token'}, 
+                          status=status.HTTP_401_UNAUTHORIZED)
+
+
 class SetUsernameView(APIView):
+    """
+    Set Username Endpoint
+    
+    Set username for authenticated user (can only be set once).
+    """
     permission_classes = [permissions.IsAuthenticated]
     
+    @extend_schema(
+        request=UsernameSetSerializer,
+        responses={
+            200: UserProfileSerializer,
+            400: OpenApiResponse(description="Username already set or invalid")
+        },
+        tags=['Authentication']
+    )
     def post(self, request):
         if request.user.username:
             return Response({
@@ -141,23 +255,71 @@ class SetUsernameView(APIView):
 
 
 class ProfileView(generics.RetrieveUpdateAPIView):
+    """
+    User Profile Endpoint
+    
+    Get or update authenticated user's profile.
+    """
     serializer_class = UserProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
+    
+    @extend_schema(tags=['Authentication'])
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+    
+    @extend_schema(tags=['Authentication'])
+    def put(self, request, *args, **kwargs):
+        return super().put(request, *args, **kwargs)
+    
+    @extend_schema(tags=['Authentication'])
+    def patch(self, request, *args, **kwargs):
+        return super().patch(request, *args, **kwargs)
     
     def get_object(self):
         return self.request.user
 
 
 class UserDetailView(generics.RetrieveAPIView):
+    """
+    User Detail Endpoint
+    
+    Get public profile of any user by username.
+    """
     serializer_class = UserProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
     queryset = User.objects.all()
     lookup_field = 'username'
+    
+    @extend_schema(tags=['Users'])
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
 
 class SendFollowRequestView(APIView):
+    """
+    Send Follow Request Endpoint
+    
+    Send a follow request to another user.
+    """
     permission_classes = [permissions.IsAuthenticated]
     
+    @extend_schema(
+        responses={
+            201: OpenApiResponse(
+                description="Follow request sent",
+                response={
+                    'type': 'object',
+                    'properties': {
+                        'message': {'type': 'string'},
+                        'request_id': {'type': 'string'}
+                    }
+                }
+            ),
+            400: OpenApiResponse(description="Bad request"),
+            404: OpenApiResponse(description="User not found")
+        },
+        tags=['Authentication']
+    )
     def post(self, request, user_id):
         try:
             to_user = User.objects.get(id=user_id)
@@ -193,8 +355,20 @@ class SendFollowRequestView(APIView):
 
 
 class AcceptFollowRequestView(APIView):
+    """
+    Accept Follow Request Endpoint
+    
+    Accept a pending follow request.
+    """
     permission_classes = [permissions.IsAuthenticated]
     
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(description="Follow request accepted"),
+            404: OpenApiResponse(description="Request not found")
+        },
+        tags=['Authentication']
+    )
     def post(self, request, request_id):
         try:
             follow_req = FollowRequest.objects.get(
@@ -212,12 +386,6 @@ class AcceptFollowRequestView(APIView):
                 following=request.user
             )
             
-            # Update counts
-            follow_req.from_user.following_count += 1
-            follow_req.from_user.save()
-            request.user.followers_count += 1
-            request.user.save()
-            
             return Response({
                 'message': 'Follow request accepted'
             }, status=status.HTTP_200_OK)
@@ -228,8 +396,36 @@ class AcceptFollowRequestView(APIView):
 
 
 class SendChatRequestView(APIView):
+    """
+    Send Chat Request Endpoint
+    
+    Send a chat request to another user.
+    """
     permission_classes = [permissions.IsAuthenticated]
     
+    @extend_schema(
+        request={
+            'type': 'object',
+            'properties': {
+                'message': {'type': 'string', 'required': False}
+            }
+        },
+        responses={
+            201: OpenApiResponse(
+                description="Chat request sent",
+                response={
+                    'type': 'object',
+                    'properties': {
+                        'message': {'type': 'string'},
+                        'request_id': {'type': 'string'}
+                    }
+                }
+            ),
+            400: OpenApiResponse(description="Bad request"),
+            404: OpenApiResponse(description="User not found")
+        },
+        tags=['Authentication']
+    )
     def post(self, request, user_id):
         try:
             to_user = User.objects.get(id=user_id)
@@ -253,3 +449,4 @@ class SendChatRequestView(APIView):
         except User.DoesNotExist:
             return Response({'error': 'User not found'}, 
                           status=status.HTTP_404_NOT_FOUND)
+        

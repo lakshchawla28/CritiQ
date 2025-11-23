@@ -4,11 +4,18 @@ from django.contrib.auth.password_validation import validate_password
 from django.utils import timezone
 from datetime import timedelta
 
-class UserRegistrationSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    phone_number = serializers.CharField(max_length=15)
+
+class UserRegistrationSerializer(serializers.ModelSerializer):
+    """User Registration Serializer"""
     password = serializers.CharField(write_only=True, validators=[validate_password])
-    full_name = serializers.CharField(max_length=100, required=False)
+    password_confirm = serializers.CharField(write_only=True)
+    
+    class Meta:
+        model = User
+        fields = ['email', 'phone_number', 'password', 'password_confirm', 'full_name']
+        extra_kwargs = {
+            'full_name': {'required': False}
+        }
     
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
@@ -20,7 +27,13 @@ class UserRegistrationSerializer(serializers.Serializer):
             raise serializers.ValidationError("Phone number already registered")
         return value
     
+    def validate(self, data):
+        if data['password'] != data['password_confirm']:
+            raise serializers.ValidationError({"password_confirm": "Passwords do not match"})
+        return data
+    
     def create(self, validated_data):
+        validated_data.pop('password_confirm')
         user = User.objects.create_user(
             email=validated_data['email'],
             phone_number=validated_data['phone_number'],
@@ -31,6 +44,7 @@ class UserRegistrationSerializer(serializers.Serializer):
 
 
 class OTPVerifySerializer(serializers.Serializer):
+    """OTP Verification Serializer"""
     phone_number = serializers.CharField()
     otp_code = serializers.CharField(max_length=6)
     
@@ -52,11 +66,20 @@ class OTPVerifySerializer(serializers.Serializer):
 
 
 class LoginSerializer(serializers.Serializer):
-    identifier = serializers.CharField()  # Can be email, phone, or username
-    password = serializers.CharField(write_only=True)
+    """Login Serializer"""
+    identifier = serializers.CharField(help_text="Email, phone number, or username")
+    password = serializers.CharField(write_only=True, style={'input_type': 'password'})
+
+
+class LoginResponseSerializer(serializers.Serializer):
+    """Login Response Serializer"""
+    access = serializers.CharField()
+    refresh = serializers.CharField()
+    user = serializers.DictField()
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    """User Profile Serializer"""
     watch_time_display = serializers.CharField(source='get_watch_time_display', read_only=True)
     is_following = serializers.SerializerMethodField()
     is_follower = serializers.SerializerMethodField()
@@ -99,6 +122,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 
 class UsernameSetSerializer(serializers.Serializer):
+    """Username Set Serializer"""
     username = serializers.CharField(max_length=30)
     
     def validate_username(self, value):
@@ -107,3 +131,25 @@ class UsernameSetSerializer(serializers.Serializer):
         if not value.replace('_', '').isalnum():
             raise serializers.ValidationError("Username can only contain letters, numbers, and underscores")
         return value
+
+
+class FollowRequestSerializer(serializers.ModelSerializer):
+    """Follow Request Serializer"""
+    from_user = UserProfileSerializer(read_only=True)
+    to_user = UserProfileSerializer(read_only=True)
+    
+    class Meta:
+        model = FollowRequest
+        fields = ['id', 'from_user', 'to_user', 'status', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class ChatRequestSerializer(serializers.ModelSerializer):
+    """Chat Request Serializer"""
+    from_user = UserProfileSerializer(read_only=True)
+    to_user = UserProfileSerializer(read_only=True)
+    
+    class Meta:
+        model = ChatRequest
+        fields = ['id', 'from_user', 'to_user', 'status', 'message', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
