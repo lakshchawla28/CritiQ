@@ -1,7 +1,13 @@
 from django.urls import path
-from .views import GetRecommendationsView, GenerateRecommendationsView
+from .views import (
+    GetRecommendationsView,
+    GenerateRecommendationsView,
+)
 
 urlpatterns = [
-    path('', GetRecommendationsView.as_view(), name='get-recommendations'),
-    path('generate/', GenerateRecommendationsView.as_view(), name='generate-recommendations'),
+    # Get personalized recommendations
+    path("", GetRecommendationsView.as_view(), name="get-recommendations"),
+
+    # Trigger manual regeneration
+    path("generate/", GenerateRecommendationsView.as_view(), name="generate-recommendations"),
 ]

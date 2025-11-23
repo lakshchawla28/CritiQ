@@ -1,7 +1,5 @@
 Django
 djangorestframework
-djongo
-pymongo
 django-cors-headers
 djangorestframework-simplejwt
 python-decouple
@@ -25,3 +23,7 @@ email-validator
 pyjwt
 bcrypt
 python-dotenv
+drf-spectacular 
+drf-spectacular-sidecar
+psycopg2-binary
+
