@@ -8,13 +8,33 @@ from apps.authentication.models import User
 from apps.movies.models import Movie
 import uuid
 
-# Predefined tags
-PREDEFINED_TAGS = [
-    'Rewatchable', 'Emotional', 'Mind-bending', 'Fun', 'Dark', 
-    'Slow-paced', 'Action-packed', 'Thought-provoking', 'Visually Stunning',
-    'Feel-good', 'Intense', 'Unpredictable', 'Heartwarming', 'Gripping',
-    'Nostalgic', 'Epic', 'Disturbing', 'Romantic', 'Hilarious', 'Suspenseful'
-]
+
+class Tag(models.Model):
+    """Predefined tags for reviews"""
+    
+    name = models.CharField(max_length=50, unique=True)
+    
+    CATEGORY_CHOICES = [
+        ('mood', 'Mood'),
+        ('pace', 'Pace'),
+        ('quality', 'Quality'),
+        ('theme', 'Theme'),
+        ('general', 'General'),
+    ]
+    category = models.CharField(max_length=30, choices=CATEGORY_CHOICES, default='general')
+    
+    is_active = models.BooleanField(default=True)
+    usage_count = models.IntegerField(default=0)
+    
+    created_at = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        db_table = 'tags'
+        ordering = ['name']
+    
+    def __str__(self):
+        return self.name
+
 
 class Review(models.Model):
     """Movie Review Model"""
@@ -36,8 +56,8 @@ class Review(models.Model):
     review_text = models.TextField(max_length=5000, blank=True)
     contains_spoilers = models.BooleanField(default=False)
     
-    # Tags
-    tags = models.JSONField(default=list)  # List of tags
+    # Tags - NOW ManyToMany
+    tags = models.ManyToManyField(Tag, related_name='reviews', blank=True)
     
     # Privacy
     PRIVACY_CHOICES = [

@@ -9,9 +9,10 @@ from apps.movies.models import Movie
 import uuid
 
 
-class UserPreference(models.Model):
+class RecommendationPreference(models.Model):
     """
     Additional user viewing preferences that improve recommendations.
+    RENAMED from UserPreference to avoid conflict with users app
     """
 
     user = models.OneToOneField(

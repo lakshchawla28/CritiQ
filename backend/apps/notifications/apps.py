@@ -1,9 +1,9 @@
 from django.apps import AppConfig
 
 
-class ReviewsConfig(AppConfig):
+class NotificationsConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'apps.reviews'
+    name = 'apps.notifications'
 
     def ready(self):
-        import apps.reviews.signals
+        import apps.notifications.signals

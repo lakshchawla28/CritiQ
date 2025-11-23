@@ -120,7 +120,6 @@ class UserPreference(models.Model):
         return f"UI Preferences for {self.user.username}"
 
 
-
 class BlockedUser(models.Model):
     """Users that have been blocked"""
     
@@ -186,3 +185,64 @@ class ReportedUser(models.Model):
     
     def __str__(self):
         return f"Report: {self.reported_user.username} by {self.reporter.username}"
+
+
+class ReportedContent(models.Model):
+    """Report reviews, posts, or comments"""
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='content_reports_made')
+    
+    CONTENT_TYPES = [
+        ('review', 'Review'),
+        ('post', 'Post'),
+        ('comment', 'Comment'),
+    ]
+    content_type = models.CharField(max_length=20, choices=CONTENT_TYPES)
+    content_id = models.CharField(max_length=100)  # UUID of the review/post/comment
+    
+    REPORT_REASONS = [
+        ('spam', 'Spam'),
+        ('inappropriate', 'Inappropriate Content'),
+        ('harassment', 'Harassment'),
+        ('misinformation', 'Misinformation'),
+        ('spoilers', 'Unmarked Spoilers'),
+        ('copyright', 'Copyright Violation'),
+        ('other', 'Other'),
+    ]
+    
+    reason = models.CharField(max_length=20, choices=REPORT_REASONS)
+    description = models.TextField(max_length=1000)
+    
+    # Moderation status
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('reviewed', 'Reviewed'),
+        ('resolved', 'Resolved'),
+        ('dismissed', 'Dismissed'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    
+    # Admin notes
+    admin_notes = models.TextField(blank=True)
+    reviewed_by = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='content_reports_reviewed'
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    
+    created_at = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        db_table = 'reported_content'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['content_type', 'content_id']),
+            models.Index(fields=['status', '-created_at']),
+        ]
+    
+    def __str__(self):
+        return f"Report: {self.content_type} by {self.reporter.username}"

@@ -27,6 +27,7 @@ urlpatterns = [
     path("api/chat/", include("apps.chat.urls")),
     path("api/matching/", include("apps.matching.urls")),
     path("api/recommendations/", include("apps.recommendations.urls")),
+    path("api/notifications/", include("apps.notifications.urls")),
 
     # ===========================
     # API SCHEMA (JSON)

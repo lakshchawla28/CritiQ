@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'apps.chat',
     'apps.matching',
     'apps.recommendations',
+    'apps.notifications',
 ]
 
 # --------------------------
@@ -130,6 +131,15 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
+
+    'DEFAULT_THROTTLE_CLASSES': [
+    'rest_framework.throttling.AnonRateThrottle',
+    'rest_framework.throttling.UserRateThrottle'
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/day',
+        'user': '1000/day'
+    }
 }
 
 SPECTACULAR_SETTINGS = {
@@ -263,6 +273,24 @@ LOGGING = {
             "level": "INFO",
             "propagate": True,
         },
+    },
+}
+
+# --------------------------
+# CELERY BEAT SCHEDULE
+# --------------------------
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    # Generate yearly stats on January 1st at 3 AM
+    'generate-yearly-stats': {
+        'task': 'apps.social.tasks.generate_yearly_stats_for_all_users',
+        'schedule': crontab(minute=0, hour=3, day_of_month=1, month_of_year=1),
+    },
+    # Regenerate recommendations daily at 2 AM
+    'regenerate-recommendations': {
+        'task': 'apps.recommendations.tasks.generate_recommendations_task',
+        'schedule': crontab(minute=0, hour=2),
     },
 }
 
