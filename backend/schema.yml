@@ -1,0 +1,4088 @@
+openapi: 3.0.3
+info:
+  title: CritiQ API
+  version: 1.0.0
+  description: API Documentation for CritiQ Backend
+paths:
+  /api/auth/chat-request/{user_id}/:
+    post:
+      operationId: auth_chat_request_create
+      description: Send Chat Request Endpoint
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendChatRequestCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SendChatRequestCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SendChatRequestCreate'
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatRequest'
+          description: Chat request sent
+        '400':
+          description: Bad request
+        '404':
+          description: User not found
+  /api/auth/follow/{user_id}/:
+    post:
+      operationId: auth_follow_create
+      description: Send a follow request to another user.
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Authentication
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowRequest'
+          description: Follow request sent
+        '400':
+          description: Bad request
+        '404':
+          description: User not found
+  /api/auth/follow/accept/{request_id}/:
+    post:
+      operationId: auth_follow_accept_create
+      description: Accept a pending follow request.
+      parameters:
+      - in: path
+        name: request_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Authentication
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: Follow request accepted
+        '404':
+          description: Request not found
+  /api/auth/login/:
+    post:
+      operationId: auth_login_create
+      description: User Login Endpoint
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Login'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Login'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Login'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+          description: ''
+        '401':
+          description: Invalid credentials
+        '403':
+          description: Account not verified
+  /api/auth/profile/:
+    get:
+      operationId: auth_profile_retrieve
+      description: User Profile Endpoint
+      tags:
+      - Authentication
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: ''
+    put:
+      operationId: auth_profile_update
+      description: User Profile Endpoint
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: ''
+    patch:
+      operationId: auth_profile_partial_update
+      description: User Profile Endpoint
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfile'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfile'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfile'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: ''
+  /api/auth/refresh/:
+    post:
+      operationId: auth_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/auth/register/:
+    post:
+      operationId: auth_register_create
+      description: |-
+        User Registration Endpoint
+
+        Register a new user with email, phone number, and password.
+        An OTP will be sent to the provided phone number for verification.
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistration'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRegistration'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRegistration'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  user_id:
+                    type: string
+                  phone_number:
+                    type: string
+          description: Registration successful
+        '400':
+          description: Bad request - validation errors
+  /api/auth/set-username/:
+    post:
+      operationId: auth_set_username_create
+      description: Set Username Endpoint
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsernameSet'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UsernameSet'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UsernameSet'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: ''
+        '400':
+          description: Username already set or invalid
+  /api/auth/user/{username}/:
+    get:
+      operationId: auth_user_retrieve
+      description: User Detail Endpoint
+      parameters:
+      - in: path
+        name: username
+        schema:
+          type: string
+        required: true
+      tags:
+      - Users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: ''
+  /api/auth/verify-otp/:
+    post:
+      operationId: auth_verify_otp_create
+      description: OTP Verification Endpoint
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OTPVerify'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OTPVerify'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OTPVerify'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+          description: ''
+        '400':
+          description: Invalid or expired OTP
+  /api/chat/rooms/:
+    get:
+      operationId: chat_rooms_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - Chat
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedChatRoomList'
+          description: ''
+  /api/chat/rooms/{room_id}/:
+    get:
+      operationId: chat_rooms_retrieve
+      parameters:
+      - in: path
+        name: room_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Chat
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatRoomDetail'
+          description: ''
+  /api/chat/rooms/{room_id}/read/:
+    post:
+      operationId: chat_rooms_read_create
+      parameters:
+      - in: path
+        name: room_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Chat
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated:
+                    type: integer
+          description: Count of updated messages
+  /api/chat/rooms/{room_id}/send/:
+    post:
+      operationId: chat_rooms_send_create
+      parameters:
+      - in: path
+        name: room_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Chat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessage'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SendMessage'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SendMessage'
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
+  /api/matching/{session_id}/:
+    get:
+      operationId: matching_retrieve
+      description: 'GET: detailed session info (session data, swipes count, results
+        summary).'
+      parameters:
+      - in: path
+        name: session_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - matching
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchingSession'
+          description: ''
+  /api/matching/{session_id}/join/:
+    post:
+      operationId: matching_join_create
+      description: 'POST: join a session (no request body). Returns serialized session.'
+      parameters:
+      - in: path
+        name: session_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - matching
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MatchingSession'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MatchingSession'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MatchingSession'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchingSession'
+          description: ''
+  /api/matching/{session_id}/results/:
+    get:
+      operationId: matching_results_list
+      description: 'GET: list MatchResult objects for a session (ordered).'
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: path
+        name: session_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - matching
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMatchResultList'
+          description: ''
+  /api/matching/{session_id}/swipe/:
+    post:
+      operationId: matching_swipe_create
+      description: |-
+        POST: Body: { "movie_id": "<uuid>", "liked": true/false }
+        Creates or updates a MovieSwipe for the (session, user, movie).
+        After each update, recompute the MatchResults.
+      parameters:
+      - in: path
+        name: session_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - matching
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MovieSwipe'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MovieSwipe'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MovieSwipe'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MovieSwipe'
+          description: ''
+  /api/matching/create/:
+    post:
+      operationId: matching_create_create
+      tags:
+      - matching
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MatchingSessionCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MatchingSessionCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MatchingSessionCreate'
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchingSessionCreate'
+          description: ''
+  /api/movies/{movie_id}/:
+    get:
+      operationId: movies_retrieve
+      parameters:
+      - in: path
+        name: movie_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - movies
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Movie'
+          description: ''
+  /api/movies/{movie_id}/interested/:
+    post:
+      operationId: movies_interested_create
+      parameters:
+      - in: path
+        name: movie_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - movies
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/movies/{movie_id}/rate/:
+    post:
+      operationId: movies_rate_create
+      parameters:
+      - in: path
+        name: movie_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - movies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Rating'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Rating'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Rating'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rating'
+          description: ''
+  /api/movies/{movie_id}/watched/:
+    post:
+      operationId: movies_watched_create
+      parameters:
+      - in: path
+        name: movie_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - movies
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/movies/popular/:
+    get:
+      operationId: movies_popular_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - movies
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMovieList'
+          description: ''
+  /api/movies/search/:
+    get:
+      operationId: movies_search_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - movies
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMovieList'
+          description: ''
+  /api/movies/upcoming/:
+    get:
+      operationId: movies_upcoming_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - movies
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMovieList'
+          description: ''
+  /api/movies/watchlists/:
+    get:
+      operationId: movies_watchlists_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - movies
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedWatchlistList'
+          description: ''
+  /api/movies/watchlists/create/:
+    post:
+      operationId: movies_watchlists_create_create
+      tags:
+      - movies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Watchlist'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Watchlist'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Watchlist'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Watchlist'
+          description: ''
+  /api/notifications/notifications/:
+    get:
+      operationId: notifications_notifications_list
+      description: |-
+        ViewSet for user notifications.
+        Uses router-generated `.../notifications/<id>/` paths.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedNotificationList'
+          description: ''
+  /api/notifications/notifications/{id}/:
+    get:
+      operationId: notifications_notifications_retrieve
+      description: |-
+        ViewSet for user notifications.
+        Uses router-generated `.../notifications/<id>/` paths.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Notification ID
+        required: true
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+  /api/notifications/notifications/{id}/delete_notification/:
+    delete:
+      operationId: notifications_notifications_delete_notification_destroy
+      description: |-
+        ViewSet for user notifications.
+        Uses router-generated `.../notifications/<id>/` paths.
+      summary: Delete a notification
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Notification ID
+        required: true
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/notifications/notifications/{id}/mark_read/:
+    post:
+      operationId: notifications_notifications_mark_read_create
+      description: |-
+        ViewSet for user notifications.
+        Uses router-generated `.../notifications/<id>/` paths.
+      summary: Mark a notification as read
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Notification ID
+        required: true
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Notification'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Notification'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Notification'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+  /api/notifications/notifications/clear_all/:
+    delete:
+      operationId: notifications_notifications_clear_all_destroy
+      description: |-
+        ViewSet for user notifications.
+        Uses router-generated `.../notifications/<id>/` paths.
+      summary: Clear all notifications
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/notifications/notifications/mark_all_read/:
+    post:
+      operationId: notifications_notifications_mark_all_read_create
+      description: |-
+        ViewSet for user notifications.
+        Uses router-generated `.../notifications/<id>/` paths.
+      summary: Mark all notifications as read
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Notification'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Notification'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Notification'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+  /api/notifications/notifications/unread_count/:
+    get:
+      operationId: notifications_notifications_unread_count_retrieve
+      description: Returns the number of unread notifications for the user.
+      summary: Unread Notifications Count
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+  /api/notifications/push-tokens/:
+    get:
+      operationId: notifications_push_tokens_list
+      description: Manage push notification tokens for logged-in users.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPushTokenList'
+          description: ''
+    post:
+      operationId: notifications_push_tokens_create
+      description: Manage push notification tokens for logged-in users.
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushToken'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PushToken'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PushToken'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushToken'
+          description: ''
+  /api/notifications/push-tokens/{id}/:
+    get:
+      operationId: notifications_push_tokens_retrieve
+      description: Manage push notification tokens for logged-in users.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushToken'
+          description: ''
+    put:
+      operationId: notifications_push_tokens_update
+      description: Manage push notification tokens for logged-in users.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushToken'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PushToken'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PushToken'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushToken'
+          description: ''
+    patch:
+      operationId: notifications_push_tokens_partial_update
+      description: Manage push notification tokens for logged-in users.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPushToken'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPushToken'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPushToken'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushToken'
+          description: ''
+    delete:
+      operationId: notifications_push_tokens_destroy
+      description: Manage push notification tokens for logged-in users.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/recommendations/:
+    get:
+      operationId: recommendations_list
+      description: Returns personalized recommendations for the logged-in user.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - recommendations
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRecommendationList'
+          description: ''
+  /api/recommendations/generate/:
+    post:
+      operationId: recommendations_generate_create
+      description: |-
+        Triggers recommendation generation for:
+        - ?user=me → generate for current user only
+        - no param → generate for all users
+      tags:
+      - recommendations
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/reviews/{review_id}/:
+    get:
+      operationId: reviews_retrieve
+      description: |-
+        GET: retrieve review
+        DELETE: delete review (owner only)
+      parameters:
+      - in: path
+        name: review_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - reviews
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+          description: ''
+    delete:
+      operationId: reviews_destroy
+      description: |-
+        GET: retrieve review
+        DELETE: delete review (owner only)
+      parameters:
+      - in: path
+        name: review_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - reviews
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/reviews/{review_id}/comment/:
+    post:
+      operationId: reviews_comment_create
+      description: 'POST: add a comment to a review'
+      parameters:
+      - in: path
+        name: review_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - reviews
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CommentInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CommentInput'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentInput'
+          description: ''
+  /api/reviews/{review_id}/like/:
+    post:
+      operationId: reviews_like_create
+      description: 'POST: toggle like on a review (creates or deletes ReviewLike)'
+      parameters:
+      - in: path
+        name: review_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - reviews
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/reviews/{review_id}/repost/:
+    post:
+      operationId: reviews_repost_create
+      description: 'POST: repost (share) an existing review with optional comment
+        (toggle behavior)'
+      parameters:
+      - in: path
+        name: review_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - reviews
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RepostInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RepostInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RepostInput'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepostInput'
+          description: ''
+  /api/reviews/create/:
+    post:
+      operationId: reviews_create_create
+      description: 'POST: create a review for a movie.'
+      tags:
+      - reviews
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReviewInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateReviewInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateReviewInput'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateReviewInput'
+          description: ''
+  /api/reviews/user/{user_id}/:
+    get:
+      operationId: reviews_user_list
+      description: 'GET: list all reviews made by a user'
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - reviews
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReviewList'
+          description: ''
+  /api/schema/:
+    get:
+      operationId: schema_retrieve
+      description: |-
+        OpenApi3 schema for this API. Format can be selected via content negotiation.
+
+        - YAML: application/vnd.oai.openapi
+        - JSON: application/vnd.oai.openapi+json
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+          - json
+          - yaml
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - af
+          - ar
+          - ar-dz
+          - ast
+          - az
+          - be
+          - bg
+          - bn
+          - br
+          - bs
+          - ca
+          - ckb
+          - cs
+          - cy
+          - da
+          - de
+          - dsb
+          - el
+          - en
+          - en-au
+          - en-gb
+          - eo
+          - es
+          - es-ar
+          - es-co
+          - es-mx
+          - es-ni
+          - es-ve
+          - et
+          - eu
+          - fa
+          - fi
+          - fr
+          - fy
+          - ga
+          - gd
+          - gl
+          - he
+          - hi
+          - hr
+          - hsb
+          - hu
+          - hy
+          - ia
+          - id
+          - ig
+          - io
+          - is
+          - it
+          - ja
+          - ka
+          - kab
+          - kk
+          - km
+          - kn
+          - ko
+          - ky
+          - lb
+          - lt
+          - lv
+          - mk
+          - ml
+          - mn
+          - mr
+          - ms
+          - my
+          - nb
+          - ne
+          - nl
+          - nn
+          - os
+          - pa
+          - pl
+          - pt
+          - pt-br
+          - ro
+          - ru
+          - sk
+          - sl
+          - sq
+          - sr
+          - sr-latn
+          - sv
+          - sw
+          - ta
+          - te
+          - tg
+          - th
+          - tk
+          - tr
+          - tt
+          - udm
+          - ug
+          - uk
+          - ur
+          - uz
+          - vi
+          - zh-hans
+          - zh-hant
+      tags:
+      - schema
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.oai.openapi:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/yaml:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/vnd.oai.openapi+json:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/social/achievements/:
+    get:
+      operationId: social_achievements_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - social
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserAchievementList'
+          description: ''
+  /api/social/feed/:
+    get:
+      operationId: social_feed_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - social
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPostList'
+          description: ''
+  /api/social/stats/{year}/:
+    get:
+      operationId: social_stats_retrieve
+      parameters:
+      - in: path
+        name: year
+        schema:
+          type: integer
+        required: true
+      tags:
+      - social
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/YearlyStats'
+          description: ''
+  /api/social/wrap/{year}/:
+    get:
+      operationId: social_wrap_retrieve
+      description: Returns a formatted "yearly wrap" for the given year.
+      parameters:
+      - in: path
+        name: year
+        schema:
+          type: integer
+        required: true
+      tags:
+      - social
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/YearlyWrap'
+          description: ''
+  /api/users/activity/:
+    get:
+      operationId: users_activity_list
+      summary: Get activity feed
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: path
+        name: user_id
+        schema:
+          type: string
+        description: UUID of user (optional)
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserActivityList'
+          description: ''
+  /api/users/activity/{user_id}/:
+    get:
+      operationId: users_activity_list_2
+      summary: Get activity feed
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: path
+        name: user_id
+        schema:
+          type: string
+        description: UUID of user (optional)
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserActivityList'
+          description: ''
+  /api/users/block/{user_id}/:
+    post:
+      operationId: users_block_create
+      summary: Block a user
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlockUserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BlockUserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BlockUserRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlockedUser'
+          description: ''
+  /api/users/blocked/:
+    get:
+      operationId: users_blocked_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBlockedUserList'
+          description: ''
+  /api/users/preferences/:
+    get:
+      operationId: users_preferences_retrieve
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreference'
+          description: ''
+    put:
+      operationId: users_preferences_update
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPreference'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserPreference'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserPreference'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreference'
+          description: ''
+    patch:
+      operationId: users_preferences_partial_update
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserPreference'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserPreference'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserPreference'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreference'
+          description: ''
+  /api/users/report/{user_id}/:
+    post:
+      operationId: users_report_create
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReportUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReportUser'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportedUser'
+          description: ''
+  /api/users/search/:
+    get:
+      operationId: users_search_list
+      summary: Search users
+      parameters:
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Search query (min 2 chars)
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PublicUserProfile'
+          description: ''
+  /api/users/stats/:
+    get:
+      operationId: users_stats_retrieve
+      summary: Get user stats
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+        description: UUID of user (optional for self)
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserStats'
+          description: ''
+  /api/users/stats/{user_id}/:
+    get:
+      operationId: users_stats_retrieve_2
+      summary: Get user stats
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+        description: UUID of user (optional for self)
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserStats'
+          description: ''
+  /api/users/top/:
+    get:
+      operationId: users_top_list
+      summary: Top users
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+        description: Number of users to return
+      - in: query
+        name: metric
+        schema:
+          type: string
+        description: movies_watched | reviews | followers
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PublicUserProfile'
+          description: ''
+  /api/users/unblock/{user_id}/:
+    delete:
+      operationId: users_unblock_destroy
+      summary: Unblock a user
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: User unblocked
+components:
+  schemas:
+    Achievement:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+        icon:
+          type: string
+          maxLength: 50
+        criteria: {}
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        rarity:
+          $ref: '#/components/schemas/RarityEnum'
+        points:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - category
+      - criteria
+      - description
+      - icon
+      - id
+      - name
+    ActivityTypeEnum:
+      enum:
+      - movie_watched
+      - review_posted
+      - review_liked
+      - comment_posted
+      - user_followed
+      - movie_rated
+      - watchlist_created
+      - achievement_earned
+      - session_created
+      type: string
+      description: |-
+        * `movie_watched` - Movie Watched
+        * `review_posted` - Review Posted
+        * `review_liked` - Review Liked
+        * `comment_posted` - Comment Posted
+        * `user_followed` - User Followed
+        * `movie_rated` - Movie Rated
+        * `watchlist_created` - Watchlist Created
+        * `achievement_earned` - Achievement Earned
+        * `session_created` - Matching Session Created
+    BlankEnum:
+      enum:
+      - ''
+    BlockUserRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          maxLength: 500
+    BlockedUser:
+      type: object
+      description: Serialize blocked users
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+        blocked_user:
+          type: string
+          format: uuid
+        blocked_user_info:
+          allOf:
+          - $ref: '#/components/schemas/UserProfile'
+          readOnly: true
+        reason:
+          type: string
+          maxLength: 500
+        blocked_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - blocked_at
+      - blocked_user
+      - blocked_user_info
+      - id
+      - user
+    CategoryEnum:
+      enum:
+      - watching
+      - reviewing
+      - social
+      - seasonal
+      - special
+      type: string
+      description: |-
+        * `watching` - Watching
+        * `reviewing` - Reviewing
+        * `social` - Social
+        * `seasonal` - Seasonal
+        * `special` - Special
+    ChatRequest:
+      type: object
+      description: Chat Request Serializer
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        from_user:
+          allOf:
+          - $ref: '#/components/schemas/UserProfile'
+          readOnly: true
+        to_user:
+          allOf:
+          - $ref: '#/components/schemas/UserProfile'
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/Status1dfEnum'
+        message:
+          type: string
+          maxLength: 200
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - from_user
+      - id
+      - to_user
+      - updated_at
+    ChatRoom:
+      type: object
+      description: List chat rooms with last message preview
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        participant_1:
+          allOf:
+          - $ref: '#/components/schemas/ChatUserMini'
+          readOnly: true
+        participant_2:
+          allOf:
+          - $ref: '#/components/schemas/ChatUserMini'
+          readOnly: true
+        last_message_text:
+          type: string
+          maxLength: 100
+        last_message_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_message:
+          allOf:
+          - $ref: '#/components/schemas/Message'
+          readOnly: true
+        last_message_sender:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - last_message
+      - participant_1
+      - participant_2
+      - updated_at
+    ChatRoomDetail:
+      type: object
+      description: Full chat room with all messages
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        participant_1:
+          allOf:
+          - $ref: '#/components/schemas/ChatUserMini'
+          readOnly: true
+        participant_2:
+          allOf:
+          - $ref: '#/components/schemas/ChatUserMini'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - messages
+      - participant_1
+      - participant_2
+      - updated_at
+    ChatUserMini:
+      type: object
+      description: Minimal user object used inside chat responses
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        username:
+          type: string
+          nullable: true
+          maxLength: 30
+        profile_picture:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 500
+      required:
+      - id
+    CommentInput:
+      type: object
+      properties:
+        comment_text:
+          type: string
+      required:
+      - comment_text
+    CreateReviewInput:
+      type: object
+      properties:
+        movie_id:
+          type: string
+          format: uuid
+        rating:
+          type: integer
+          maximum: 10
+          minimum: 0
+        review_text:
+          type: string
+        contains_spoilers:
+          type: boolean
+          default: false
+        tags:
+          type: array
+          items:
+            type: string
+      required:
+      - movie_id
+      - rating
+    DeviceTypeEnum:
+      enum:
+      - ios
+      - android
+      - web
+      type: string
+      description: |-
+        * `ios` - iOS
+        * `android` - Android
+        * `web` - Web
+    FollowRequest:
+      type: object
+      description: Follow Request Serializer
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        from_user:
+          allOf:
+          - $ref: '#/components/schemas/UserProfile'
+          readOnly: true
+        to_user:
+          allOf:
+          - $ref: '#/components/schemas/UserProfile'
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/Status1dfEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - from_user
+      - id
+      - to_user
+      - updated_at
+    Login:
+      type: object
+      description: Login Serializer
+      properties:
+        identifier:
+          type: string
+          description: Email, phone number, or username
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - identifier
+      - password
+    LoginResponse:
+      type: object
+      description: Login Response Serializer
+      properties:
+        access:
+          type: string
+        refresh:
+          type: string
+        user:
+          type: object
+          additionalProperties: {}
+      required:
+      - access
+      - refresh
+      - user
+    MatchResult:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        movie:
+          allOf:
+          - $ref: '#/components/schemas/Movie'
+          readOnly: true
+        likes_count:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        match_percentage:
+          type: number
+          format: double
+        matched_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - movie
+    MatchingSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 140
+        created_by:
+          allOf:
+          - $ref: '#/components/schemas/UserMini'
+          readOnly: true
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserMini'
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/MatchingSessionStatusEnum'
+        selected_genres: {}
+        theme:
+          type: string
+          maxLength: 100
+        release_year_min:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          nullable: true
+        release_year_max:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          nullable: true
+        max_runtime:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_by
+      - id
+      - participants
+      - updated_at
+    MatchingSessionCreate:
+      type: object
+      description: Used to create sessions; participants may be added after creation.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 140
+        selected_genres:
+          type: array
+          items:
+            type: string
+        theme:
+          type: string
+          maxLength: 100
+        release_year_min:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          nullable: true
+        release_year_max:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          nullable: true
+        max_runtime:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          nullable: true
+      required:
+      - id
+    MatchingSessionStatusEnum:
+      enum:
+      - waiting
+      - active
+      - completed
+      - cancelled
+      type: string
+      description: |-
+        * `waiting` - Waiting for participants
+        * `active` - Active (swiping)
+        * `completed` - Completed
+        * `cancelled` - Cancelled
+    Message:
+      type: object
+      description: Serializer for Message model
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        chat_room:
+          type: string
+          format: uuid
+        sender:
+          allOf:
+          - $ref: '#/components/schemas/ChatUserMini'
+          readOnly: true
+        message_text:
+          type: string
+          maxLength: 5000
+        message_type:
+          $ref: '#/components/schemas/MessageMessageTypeEnum'
+        shared_content_id:
+          type: string
+          nullable: true
+        is_read:
+          type: boolean
+          readOnly: true
+        read_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - chat_room
+      - created_at
+      - id
+      - is_read
+      - message_text
+      - read_at
+      - sender
+    MessageMessageTypeEnum:
+      enum:
+      - text
+      - movie_share
+      - review_share
+      type: string
+      description: |-
+        * `text` - Text
+        * `movie_share` - Movie Share
+        * `review_share` - Review Share
+    Movie:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        tmdb_id:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        title:
+          type: string
+          maxLength: 200
+        original_title:
+          type: string
+          maxLength: 200
+        overview:
+          type: string
+        poster_path:
+          type: string
+          maxLength: 200
+        backdrop_path:
+          type: string
+          maxLength: 200
+        release_date:
+          type: string
+          format: date
+          nullable: true
+        runtime:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          nullable: true
+        genres: {}
+        original_language:
+          type: string
+          maxLength: 10
+        tmdb_vote_average:
+          type: number
+          format: double
+        tmdb_vote_count:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        app_rating_average:
+          type: number
+          format: double
+        app_rating_count:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        watch_count:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        interested_count:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        is_upcoming:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_synced:
+          type: string
+          format: date-time
+      required:
+      - id
+      - original_language
+      - overview
+      - title
+      - tmdb_id
+      - updated_at
+    MovieSwipe:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        session:
+          type: string
+          format: uuid
+          readOnly: true
+        user:
+          allOf:
+          - $ref: '#/components/schemas/UserMini'
+          readOnly: true
+        movie:
+          allOf:
+          - $ref: '#/components/schemas/Movie'
+          readOnly: true
+        movie_id:
+          type: string
+          format: uuid
+          writeOnly: true
+        liked:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - movie
+      - movie_id
+      - session
+      - updated_at
+      - user
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        notification_type:
+          $ref: '#/components/schemas/NotificationTypeEnum'
+        title:
+          type: string
+          maxLength: 100
+        message:
+          type: string
+          maxLength: 500
+        related_user:
+          allOf:
+          - $ref: '#/components/schemas/RelatedUser'
+          readOnly: true
+        related_object_id:
+          type: string
+          nullable: true
+          maxLength: 100
+        related_object_type:
+          type: string
+          maxLength: 50
+        action_url:
+          type: string
+          maxLength: 200
+        is_read:
+          type: boolean
+        read_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - message
+      - notification_type
+      - related_user
+      - title
+    NotificationTypeEnum:
+      enum:
+      - follow_request
+      - follow_accepted
+      - chat_request
+      - chat_accepted
+      - review_liked
+      - review_commented
+      - review_reposted
+      - achievement_earned
+      - match_found
+      - mentioned
+      - new_follower
+      type: string
+      description: |-
+        * `follow_request` - Follow Request
+        * `follow_accepted` - Follow Request Accepted
+        * `chat_request` - Chat Request
+        * `chat_accepted` - Chat Request Accepted
+        * `review_liked` - Review Liked
+        * `review_commented` - Review Commented
+        * `review_reposted` - Review Reposted
+        * `achievement_earned` - Achievement Earned
+        * `match_found` - Match Found
+        * `mentioned` - Mentioned
+        * `new_follower` - New Follower
+    NullEnum:
+      enum:
+      - null
+    OTPVerify:
+      type: object
+      description: OTP Verification Serializer
+      properties:
+        phone_number:
+          type: string
+        otp_code:
+          type: string
+          maxLength: 6
+      required:
+      - otp_code
+      - phone_number
+    PaginatedBlockedUserList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/BlockedUser'
+    PaginatedChatRoomList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatRoom'
+    PaginatedMatchResultList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchResult'
+    PaginatedMovieList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Movie'
+    PaginatedNotificationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+    PaginatedPostList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Post'
+    PaginatedPushTokenList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PushToken'
+    PaginatedRecommendationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Recommendation'
+    PaginatedReviewList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Review'
+    PaginatedUserAchievementList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserAchievement'
+    PaginatedUserActivityList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserActivity'
+    PaginatedWatchlistList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Watchlist'
+    PatchedPushToken:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        device_type:
+          $ref: '#/components/schemas/DeviceTypeEnum'
+        token:
+          type: string
+          maxLength: 500
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedUserPreference:
+      type: object
+      description: Serialize user preferences
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+        email_notifications:
+          type: boolean
+        push_notifications:
+          type: boolean
+        notify_on_follow:
+          type: boolean
+        notify_on_comment:
+          type: boolean
+        notify_on_like:
+          type: boolean
+        notify_on_mention:
+          type: boolean
+        notify_on_new_follower:
+          type: boolean
+        notify_on_chat_request:
+          type: boolean
+        notify_on_match_found:
+          type: boolean
+        show_spoilers:
+          type: boolean
+        mature_content:
+          type: boolean
+        preferred_language:
+          type: string
+          maxLength: 10
+        preferred_region:
+          type: string
+          maxLength: 10
+        autoplay_trailers:
+          type: boolean
+        theme_mode:
+          $ref: '#/components/schemas/ThemeModeEnum'
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedUserProfile:
+      type: object
+      description: User Profile Serializer
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        phone_number:
+          type: string
+          readOnly: true
+        username:
+          type: string
+          nullable: true
+          maxLength: 30
+        full_name:
+          type: string
+          maxLength: 100
+        bio:
+          type: string
+          maxLength: 500
+        profile_picture:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 500
+        date_of_birth:
+          type: string
+          format: date
+          nullable: true
+        netflix_profile:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 200
+        prime_video_profile:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 200
+        disney_plus_profile:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 200
+        hbo_max_profile:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 200
+        reviews_privacy:
+          $ref: '#/components/schemas/PrivacyEnum'
+        ratings_privacy:
+          $ref: '#/components/schemas/PrivacyEnum'
+        watchlist_privacy:
+          $ref: '#/components/schemas/PrivacyEnum'
+        watch_history_privacy:
+          $ref: '#/components/schemas/PrivacyEnum'
+        total_watch_time_minutes:
+          type: integer
+          readOnly: true
+        watch_time_display:
+          type: string
+          readOnly: true
+        movies_watched_count:
+          type: integer
+          readOnly: true
+        reviews_count:
+          type: integer
+          readOnly: true
+        followers_count:
+          type: integer
+          readOnly: true
+        following_count:
+          type: integer
+          readOnly: true
+        friends_count:
+          type: integer
+          readOnly: true
+        is_following:
+          type: boolean
+          readOnly: true
+        is_follower:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    Post:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        content:
+          type: string
+          maxLength: 2000
+        likes_count:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        comments_count:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+        review:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - id
+      - updated_at
+      - user
+    PrivacyEnum:
+      enum:
+      - everyone
+      - followers
+      - friends
+      - private
+      type: string
+      description: |-
+        * `everyone` - Everyone
+        * `followers` - Followers Only
+        * `friends` - Friends Only
+        * `private` - Private
+    PublicUserProfile:
+      type: object
+      description: Public-facing user profile (limited info)
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        username:
+          type: string
+          readOnly: true
+          nullable: true
+        full_name:
+          type: string
+          readOnly: true
+        bio:
+          type: string
+          readOnly: true
+        profile_picture:
+          type: string
+          format: uri
+          readOnly: true
+          nullable: true
+        movies_watched_count:
+          type: integer
+          readOnly: true
+        reviews_count:
+          type: integer
+          readOnly: true
+        followers_count:
+          type: integer
+          readOnly: true
+        following_count:
+          type: integer
+          readOnly: true
+        total_watch_time_minutes:
+          type: integer
+          readOnly: true
+        watch_time_display:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        is_following:
+          type: boolean
+          readOnly: true
+        is_blocked:
+          type: boolean
+          readOnly: true
+      required:
+      - bio
+      - created_at
+      - followers_count
+      - following_count
+      - full_name
+      - id
+      - is_blocked
+      - is_following
+      - movies_watched_count
+      - profile_picture
+      - reviews_count
+      - total_watch_time_minutes
+      - username
+      - watch_time_display
+    PushToken:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        device_type:
+          $ref: '#/components/schemas/DeviceTypeEnum'
+        token:
+          type: string
+          maxLength: 500
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - device_type
+      - id
+      - token
+    RarityEnum:
+      enum:
+      - common
+      - rare
+      - epic
+      - legendary
+      type: string
+      description: |-
+        * `common` - Common
+        * `rare` - Rare
+        * `epic` - Epic
+        * `legendary` - Legendary
+    Rating:
+      type: object
+      properties:
+        rating:
+          $ref: '#/components/schemas/RatingRatingEnum'
+      required:
+      - rating
+    RatingRatingEnum:
+      enum:
+      - trash
+      - timepass
+      - worth
+      - peak
+      type: string
+      description: |-
+        * `trash` - trash
+        * `timepass` - timepass
+        * `worth` - worth
+        * `peak` - peak
+    Recommendation:
+      type: object
+      description: Serializer for movie recommendations
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        movie:
+          allOf:
+          - $ref: '#/components/schemas/RecommendationMovie'
+          readOnly: true
+        score:
+          type: number
+          format: double
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+        is_viewed:
+          type: boolean
+        is_dismissed:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - movie
+      - reason
+      - score
+    RecommendationMovie:
+      type: object
+      description: Minimal movie serializer for recommendations
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        tmdb_id:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        title:
+          type: string
+          maxLength: 200
+        poster_path:
+          type: string
+          maxLength: 200
+        release_date:
+          type: string
+          format: date
+          nullable: true
+        genres: {}
+      required:
+      - id
+      - title
+      - tmdb_id
+    RelatedUser:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        username:
+          type: string
+          nullable: true
+          maxLength: 30
+        profile_picture:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 500
+      required:
+      - id
+    ReportUser:
+      type: object
+      properties:
+        reason:
+          $ref: '#/components/schemas/ReportUserReasonEnum'
+        description:
+          type: string
+          maxLength: 1000
+      required:
+      - description
+      - reason
+    ReportUserReasonEnum:
+      enum:
+      - spam
+      - harassment
+      - inappropriate
+      - fake_account
+      - impersonation
+      - other
+      type: string
+      description: |-
+        * `spam` - spam
+        * `harassment` - harassment
+        * `inappropriate` - inappropriate
+        * `fake_account` - fake_account
+        * `impersonation` - impersonation
+        * `other` - other
+    ReportedUser:
+      type: object
+      description: Serialize reported users
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        reporter:
+          type: string
+          format: uuid
+          readOnly: true
+        reporter_info:
+          allOf:
+          - $ref: '#/components/schemas/UserProfile'
+          readOnly: true
+        reported_user:
+          type: string
+          format: uuid
+        reported_user_info:
+          allOf:
+          - $ref: '#/components/schemas/UserProfile'
+          readOnly: true
+        reason:
+          $ref: '#/components/schemas/ReportedUserReasonEnum'
+        description:
+          type: string
+          maxLength: 1000
+        status:
+          $ref: '#/components/schemas/ReportedUserStatusEnum'
+        admin_notes:
+          type: string
+        reviewed_by:
+          type: string
+          format: uuid
+          nullable: true
+        reviewed_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - description
+      - id
+      - reason
+      - reported_user
+      - reported_user_info
+      - reporter
+      - reporter_info
+    ReportedUserReasonEnum:
+      enum:
+      - spam
+      - harassment
+      - inappropriate
+      - fake_account
+      - impersonation
+      - other
+      type: string
+      description: |-
+        * `spam` - Spam
+        * `harassment` - Harassment
+        * `inappropriate` - Inappropriate Content
+        * `fake_account` - Fake Account
+        * `impersonation` - Impersonation
+        * `other` - Other
+    ReportedUserStatusEnum:
+      enum:
+      - pending
+      - reviewed
+      - resolved
+      - dismissed
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `reviewed` - Reviewed
+        * `resolved` - Resolved
+        * `dismissed` - Dismissed
+    RepostInput:
+      type: object
+      properties:
+        comment:
+          type: string
+    Review:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user:
+          type: string
+          readOnly: true
+        movie:
+          allOf:
+          - $ref: '#/components/schemas/Movie'
+          readOnly: true
+        rating:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/ReviewRatingEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        review_text:
+          type: string
+          maxLength: 5000
+        contains_spoilers:
+          type: boolean
+        tags:
+          type: array
+          items:
+            type: integer
+        privacy:
+          $ref: '#/components/schemas/PrivacyEnum'
+        likes_count:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        comments_count:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        reposts_count:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        likes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReviewLike'
+          readOnly: true
+        comments:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReviewComment'
+          readOnly: true
+        reposts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReviewRepost'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - comments
+      - id
+      - likes
+      - movie
+      - reposts
+      - updated_at
+      - user
+    ReviewComment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user:
+          type: string
+          readOnly: true
+        comment_text:
+          type: string
+          maxLength: 1000
+        parent_comment:
+          type: string
+          format: uuid
+          nullable: true
+        replies:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - comment_text
+      - id
+      - replies
+      - updated_at
+      - user
+    ReviewLike:
+      type: object
+      properties:
+        user:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - user
+    ReviewRatingEnum:
+      enum:
+      - trash
+      - timepass
+      - worth
+      - peak
+      type: string
+      description: |-
+        * `trash` - Trash
+        * `timepass` - Timepass
+        * `worth` - Worth the Clock
+        * `peak` - Peak
+    ReviewRepost:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user:
+          type: string
+          readOnly: true
+        comment:
+          type: string
+          maxLength: 500
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - user
+    SendChatRequestCreate:
+      type: object
+      description: Request body for sending a chat request (optional message).
+      properties:
+        message:
+          type: string
+          nullable: true
+    SendMessage:
+      type: object
+      properties:
+        message_text:
+          type: string
+        message_type:
+          allOf:
+          - $ref: '#/components/schemas/SendMessageMessageTypeEnum'
+          default: text
+        shared_content_id:
+          type: string
+          nullable: true
+    SendMessageMessageTypeEnum:
+      enum:
+      - text
+      - movie_share
+      - review_share
+      type: string
+      description: |-
+        * `text` - text
+        * `movie_share` - movie_share
+        * `review_share` - review_share
+    Status1dfEnum:
+      enum:
+      - pending
+      - accepted
+      - rejected
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `accepted` - Accepted
+        * `rejected` - Rejected
+    ThemeModeEnum:
+      enum:
+      - light
+      - dark
+      - auto
+      type: string
+      description: |-
+        * `light` - Light
+        * `dark` - Dark
+        * `auto` - Auto
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    UserAchievement:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        achievement:
+          allOf:
+          - $ref: '#/components/schemas/Achievement'
+          readOnly: true
+        earned_at:
+          type: string
+          format: date-time
+        progress:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        user:
+          type: string
+          format: uuid
+      required:
+      - achievement
+      - id
+      - user
+    UserActivity:
+      type: object
+      description: Serialize user activities
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+        user_username:
+          type: string
+          readOnly: true
+        activity_type:
+          $ref: '#/components/schemas/ActivityTypeEnum'
+        related_data: {}
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - activity_type
+      - created_at
+      - id
+      - user
+      - user_username
+    UserMini:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        username:
+          type: string
+          nullable: true
+          maxLength: 30
+        profile_picture:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 500
+      required:
+      - id
+    UserPreference:
+      type: object
+      description: Serialize user preferences
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+        email_notifications:
+          type: boolean
+        push_notifications:
+          type: boolean
+        notify_on_follow:
+          type: boolean
+        notify_on_comment:
+          type: boolean
+        notify_on_like:
+          type: boolean
+        notify_on_mention:
+          type: boolean
+        notify_on_new_follower:
+          type: boolean
+        notify_on_chat_request:
+          type: boolean
+        notify_on_match_found:
+          type: boolean
+        show_spoilers:
+          type: boolean
+        mature_content:
+          type: boolean
+        preferred_language:
+          type: string
+          maxLength: 10
+        preferred_region:
+          type: string
+          maxLength: 10
+        autoplay_trailers:
+          type: boolean
+        theme_mode:
+          $ref: '#/components/schemas/ThemeModeEnum'
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - id
+      - updated_at
+      - user
+    UserProfile:
+      type: object
+      description: User Profile Serializer
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        phone_number:
+          type: string
+          readOnly: true
+        username:
+          type: string
+          nullable: true
+          maxLength: 30
+        full_name:
+          type: string
+          maxLength: 100
+        bio:
+          type: string
+          maxLength: 500
+        profile_picture:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 500
+        date_of_birth:
+          type: string
+          format: date
+          nullable: true
+        netflix_profile:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 200
+        prime_video_profile:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 200
+        disney_plus_profile:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 200
+        hbo_max_profile:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 200
+        reviews_privacy:
+          $ref: '#/components/schemas/PrivacyEnum'
+        ratings_privacy:
+          $ref: '#/components/schemas/PrivacyEnum'
+        watchlist_privacy:
+          $ref: '#/components/schemas/PrivacyEnum'
+        watch_history_privacy:
+          $ref: '#/components/schemas/PrivacyEnum'
+        total_watch_time_minutes:
+          type: integer
+          readOnly: true
+        watch_time_display:
+          type: string
+          readOnly: true
+        movies_watched_count:
+          type: integer
+          readOnly: true
+        reviews_count:
+          type: integer
+          readOnly: true
+        followers_count:
+          type: integer
+          readOnly: true
+        following_count:
+          type: integer
+          readOnly: true
+        friends_count:
+          type: integer
+          readOnly: true
+        is_following:
+          type: boolean
+          readOnly: true
+        is_follower:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - email
+      - followers_count
+      - following_count
+      - friends_count
+      - id
+      - is_follower
+      - is_following
+      - movies_watched_count
+      - phone_number
+      - reviews_count
+      - total_watch_time_minutes
+      - watch_time_display
+    UserRegistration:
+      type: object
+      description: User Registration Serializer
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        phone_number:
+          type: string
+          maxLength: 15
+        password:
+          type: string
+          writeOnly: true
+        password_confirm:
+          type: string
+          writeOnly: true
+        full_name:
+          type: string
+          maxLength: 100
+      required:
+      - email
+      - password
+      - password_confirm
+      - phone_number
+    UserStats:
+      type: object
+      description: Serialize user statistics
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+        most_watched_genre: {}
+        favorite_decade:
+          type: string
+          maxLength: 10
+        average_movie_length:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        most_active_day:
+          type: string
+          maxLength: 10
+        most_active_hour:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          nullable: true
+        total_likes_received:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        total_comments_made:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        current_watch_streak:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        longest_watch_streak:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        last_watch_date:
+          type: string
+          format: date
+          nullable: true
+        movies_watched_percentile:
+          type: number
+          format: double
+        reviews_written_percentile:
+          type: number
+          format: double
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - id
+      - updated_at
+      - user
+    UsernameSet:
+      type: object
+      description: Username Set Serializer
+      properties:
+        username:
+          type: string
+          maxLength: 30
+      required:
+      - username
+    Watchlist:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+        is_default:
+          type: boolean
+        privacy:
+          $ref: '#/components/schemas/PrivacyEnum'
+        is_collaborative:
+          type: boolean
+        collaborators:
+          type: array
+          items:
+            type: string
+            format: uuid
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        movies:
+          type: array
+          items:
+            $ref: '#/components/schemas/WatchlistMovie'
+          readOnly: true
+      required:
+      - id
+      - movies
+      - name
+      - updated_at
+      - user
+    WatchlistMovie:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        movie:
+          allOf:
+          - $ref: '#/components/schemas/Movie'
+          readOnly: true
+        added_by:
+          type: string
+          format: uuid
+        notes:
+          type: string
+          maxLength: 200
+        added_at:
+          type: string
+          format: date-time
+      required:
+      - added_by
+      - id
+      - movie
+    YearlyStats:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        year:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        movies_watched:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        total_runtime_minutes:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        top_genres: {}
+        top_rated_movies: {}
+        reviews_written:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        avg_rating_given:
+          type: number
+          format: double
+        most_used_tags: {}
+        new_followers:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        likes_received:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        badges_earned: {}
+        created_at:
+          type: string
+          format: date-time
+        user:
+          type: string
+          format: uuid
+      required:
+      - id
+      - user
+      - year
+    YearlyWrap:
+      type: object
+      properties:
+        year:
+          type: integer
+        movies_watched:
+          type: integer
+        total_runtime_minutes:
+          type: integer
+        top_genres:
+          type: array
+          items:
+            type: string
+        top_rated_movies:
+          type: array
+          items:
+            type: string
+        reviews_written:
+          type: integer
+        most_used_tags:
+          type: array
+          items:
+            type: string
+        new_followers:
+          type: integer
+        likes_received:
+          type: integer
+        badges_earned:
+          type: array
+          items:
+            type: string
+      required:
+      - badges_earned
+      - likes_received
+      - most_used_tags
+      - movies_watched
+      - new_followers
+      - reviews_written
+      - top_genres
+      - top_rated_movies
+      - total_runtime_minutes
+      - year
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

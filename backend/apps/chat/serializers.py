@@ -1,22 +1,22 @@
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
+
 from .models import ChatRoom, Message, TypingStatus
 from apps.authentication.models import User
 
 
-# ======================================================
-# USER (MINIMAL SERIALIZER)
-# ======================================================
-class UserMiniSerializer(serializers.ModelSerializer):
+class ChatUserMiniSerializer(serializers.ModelSerializer):
+    """Minimal user object used inside chat responses"""
+
     class Meta:
         model = User
         fields = ["id", "username", "profile_picture"]
 
 
-# ======================================================
-# MESSAGE SERIALIZER
-# ======================================================
 class MessageSerializer(serializers.ModelSerializer):
-    sender = UserMiniSerializer(read_only=True)
+    """Serializer for Message model"""
+
+    sender = ChatUserMiniSerializer(read_only=True)
 
     class Meta:
         model = Message
@@ -31,25 +31,28 @@ class MessageSerializer(serializers.ModelSerializer):
             "read_at",
             "created_at",
         ]
+        read_only_fields = [
+            "id",
+            "sender",
+            "read_at",
+            "created_at",
+            "is_read",
+        ]
 
 
-# ======================================================
-# TYPING STATUS SERIALIZER
-# ======================================================
 class TypingStatusSerializer(serializers.ModelSerializer):
-    user = UserMiniSerializer(read_only=True)
+    user = ChatUserMiniSerializer(read_only=True)
 
     class Meta:
         model = TypingStatus
         fields = ["user", "is_typing", "last_updated"]
 
 
-# ======================================================
-# CHAT ROOM SERIALIZER
-# ======================================================
 class ChatRoomSerializer(serializers.ModelSerializer):
-    participant_1 = UserMiniSerializer(read_only=True)
-    participant_2 = UserMiniSerializer(read_only=True)
+    """List chat rooms with last message preview"""
+
+    participant_1 = ChatUserMiniSerializer(read_only=True)
+    participant_2 = ChatUserMiniSerializer(read_only=True)
     last_message = serializers.SerializerMethodField()
 
     class Meta:
@@ -66,17 +69,17 @@ class ChatRoomSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
-    def get_last_message(self, obj):
+    @extend_schema_field(MessageSerializer)
+    def get_last_message(self, obj) -> dict | None:
         last = obj.messages.order_by("-created_at").first()
-        return MessageSerializer(last).data if last else None
+        return MessageSerializer(last, context=self.context).data if last else None
 
 
-# ======================================================
-# CHAT ROOM DETAIL SERIALIZER (INCLUDES MESSAGES)
-# ======================================================
 class ChatRoomDetailSerializer(serializers.ModelSerializer):
-    participant_1 = UserMiniSerializer(read_only=True)
-    participant_2 = UserMiniSerializer(read_only=True)
+    """Full chat room with all messages"""
+
+    participant_1 = ChatUserMiniSerializer(read_only=True)
+    participant_2 = ChatUserMiniSerializer(read_only=True)
     messages = MessageSerializer(many=True, read_only=True)
 
     class Meta:
@@ -89,3 +92,12 @@ class ChatRoomDetailSerializer(serializers.ModelSerializer):
             "updated_at",
             "messages",
         ]
+
+class CreateChatRoomSerializer(serializers.ModelSerializer):
+    """Serializer for creating chat rooms"""
+
+    class Meta:
+        model = ChatRoom
+        fields = ["participant_1", "participant_2"]
+
+        

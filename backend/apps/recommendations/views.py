@@ -1,4 +1,6 @@
-from rest_framework import generics, status
+# apps/recommendations/views.py
+
+from rest_framework import generics, status, serializers
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -8,6 +10,13 @@ from apps.recommendations.tasks import (
     generate_recommendations_for_user,
     generate_recommendations_task,
 )
+
+
+# ---------------------------------------------------
+# Utility serializer for endpoints with no body input
+# ---------------------------------------------------
+class EmptySerializer(serializers.Serializer):
+    pass
 
 
 # ======================================================
@@ -35,10 +44,11 @@ class GetRecommendationsView(generics.ListAPIView):
 class GenerateRecommendationsView(generics.GenericAPIView):
     """
     Triggers recommendation generation for:
-    - current user (user=me)
-    - all users (default)
+    - ?user=me → generate for current user only
+    - no param → generate for all users
     """
     permission_classes = [IsAuthenticated]
+    serializer_class = EmptySerializer   # ★ IMPORTANT FOR SCHEMA
 
     def post(self, request):
         target = request.query_params.get("user")

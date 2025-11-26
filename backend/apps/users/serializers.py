@@ -3,9 +3,26 @@ from apps.authentication.models import User
 from apps.authentication.serializers import UserProfileSerializer
 from .models import UserStats, UserActivity, UserPreference, BlockedUser, ReportedUser
 
+# ----- Utility / small request serializers used by views -----
+class EmptySerializer(serializers.Serializer):
+    """Used for endpoints that require a serializer for schema generation but accept no body."""
+    pass
+
+
+class BlockUserRequestSerializer(serializers.Serializer):
+    reason = serializers.CharField(required=False, allow_blank=True, max_length=500)
+
+
+class ReportUserSerializer(serializers.Serializer):
+    reason = serializers.ChoiceField(choices=[r[0] for r in ReportedUser.REPORT_REASONS])
+    description = serializers.CharField(max_length=1000)
+
+
+# ----- Primary serializers -----
 class UserStatsSerializer(serializers.ModelSerializer):
     """Serialize user statistics"""
-    
+    id = serializers.UUIDField(read_only=True)
+
     class Meta:
         model = UserStats
         fields = [
@@ -21,9 +38,8 @@ class UserStatsSerializer(serializers.ModelSerializer):
 
 class UserActivitySerializer(serializers.ModelSerializer):
     """Serialize user activities"""
-    
     user_username = serializers.CharField(source='user.username', read_only=True)
-    
+
     class Meta:
         model = UserActivity
         fields = [
@@ -35,7 +51,7 @@ class UserActivitySerializer(serializers.ModelSerializer):
 
 class UserPreferenceSerializer(serializers.ModelSerializer):
     """Serialize user preferences"""
-    
+
     class Meta:
         model = UserPreference
         fields = [
@@ -52,9 +68,8 @@ class UserPreferenceSerializer(serializers.ModelSerializer):
 
 class BlockedUserSerializer(serializers.ModelSerializer):
     """Serialize blocked users"""
-    
     blocked_user_info = UserProfileSerializer(source='blocked_user', read_only=True)
-    
+
     class Meta:
         model = BlockedUser
         fields = [
@@ -64,21 +79,11 @@ class BlockedUserSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'user', 'blocked_at']
 
 
-class ReportUserSerializer(serializers.Serializer):
-    """Report a user"""
-    
-    reason = serializers.ChoiceField(choices=[
-        'spam', 'harassment', 'inappropriate', 'fake_account', 'impersonation', 'other'
-    ])
-    description = serializers.CharField(max_length=1000)
-
-
 class ReportedUserSerializer(serializers.ModelSerializer):
     """Serialize reported users"""
-    
     reporter_info = UserProfileSerializer(source='reporter', read_only=True)
     reported_user_info = UserProfileSerializer(source='reported_user', read_only=True)
-    
+
     class Meta:
         model = ReportedUser
         fields = [
@@ -92,11 +97,10 @@ class ReportedUserSerializer(serializers.ModelSerializer):
 
 class PublicUserProfileSerializer(serializers.ModelSerializer):
     """Public-facing user profile (limited info)"""
-    
     watch_time_display = serializers.CharField(source='get_watch_time_display', read_only=True)
     is_following = serializers.SerializerMethodField()
     is_blocked = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = User
         fields = [
@@ -106,8 +110,8 @@ class PublicUserProfileSerializer(serializers.ModelSerializer):
             'watch_time_display', 'created_at', 'is_following', 'is_blocked'
         ]
         read_only_fields = fields
-    
-    def get_is_following(self, obj):
+
+    def get_is_following(self, obj) -> bool:
         request = self.context.get('request')
         if request and request.user.is_authenticated:
             from apps.authentication.models import UserFollow
@@ -116,8 +120,8 @@ class PublicUserProfileSerializer(serializers.ModelSerializer):
                 following=obj
             ).exists()
         return False
-    
-    def get_is_blocked(self, obj):
+
+    def get_is_blocked(self, obj) -> bool:
         request = self.context.get('request')
         if request and request.user.is_authenticated:
             return BlockedUser.objects.filter(
@@ -125,3 +129,4 @@ class PublicUserProfileSerializer(serializers.ModelSerializer):
                 blocked_user=obj
             ).exists()
         return False
+

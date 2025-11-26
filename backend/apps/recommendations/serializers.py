@@ -1,6 +1,8 @@
+# apps/recommendations/serializers.py
+
 from rest_framework import serializers
 from apps.recommendations.models import (
-    RecommendationPreference,  # ← CHANGED from UserPreference
+    RecommendationPreference,
     Recommendation,
     SimilarityScore
 )
@@ -8,7 +10,7 @@ from apps.movies.models import Movie
 from apps.authentication.models import User
 
 
-class MovieSerializer(serializers.ModelSerializer):
+class RecommendationMovieSerializer(serializers.ModelSerializer):
     """Minimal movie serializer for recommendations"""
     class Meta:
         model = Movie
@@ -33,7 +35,7 @@ class RecommendationPreferenceSerializer(serializers.ModelSerializer):
 
 class RecommendationSerializer(serializers.ModelSerializer):
     """Serializer for movie recommendations"""
-    movie = MovieSerializer(read_only=True)
+    movie = RecommendationMovieSerializer(read_only=True)
     
     class Meta:
         model = Recommendation
@@ -65,3 +67,10 @@ class SimilarityScoreSerializer(serializers.ModelSerializer):
             'calculated_at'
         ]
         read_only_fields = ['calculated_at']
+
+from rest_framework import serializers
+class EmptySerializer(serializers.Serializer):
+    pass
+    """Used for endpoints that do not accept body (present to satisfy spectacular)."""
+
+                

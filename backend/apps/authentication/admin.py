@@ -27,3 +27,17 @@ class OTPVerificationAdmin(admin.ModelAdmin):
     list_display = ['user', 'phone_number', 'otp_code', 'verification_type', 'is_verified', 'created_at']
     list_filter = ['verification_type', 'is_verified', 'created_at']
     search_fields = ['phone_number', 'email', 'otp_code']
+
+
+@admin.register(FollowRequest)
+class FollowRequestAdmin(admin.ModelAdmin):
+    list_display = ['from_user', 'to_user', 'status', 'created_at']
+    list_filter = ['status', 'created_at']
+    search_fields = ['from_user__email', 'to_user__email']
+
+
+@admin.register(ChatRequest)
+class ChatRequestAdmin(admin.ModelAdmin):
+    list_display = ['from_user', 'to_user', 'status', 'created_at']
+    list_filter = ['status', 'created_at']
+    search_fields = ['from_user__email', 'to_user__email']

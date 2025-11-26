@@ -1,4 +1,4 @@
-from rest_framework import generics, status
+from rest_framework import generics, status, serializers
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -7,12 +7,9 @@ from apps.reviews.models import Review
 from apps.authentication.models import User
 
 
-# ---------------------------------------
+# ----------------------------------------------------
 # Serializers
-# ---------------------------------------
-
-from rest_framework import serializers
-
+# ----------------------------------------------------
 
 class PostSerializer(serializers.ModelSerializer):
     class Meta:
@@ -40,9 +37,23 @@ class YearlyStatsSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-# =============================================================
+# For GenerateYearlyWrapView response
+class YearlyWrapSerializer(serializers.Serializer):
+    year = serializers.IntegerField()
+    movies_watched = serializers.IntegerField()
+    total_runtime_minutes = serializers.IntegerField()
+    top_genres = serializers.ListField(child=serializers.CharField())
+    top_rated_movies = serializers.ListField(child=serializers.CharField())
+    reviews_written = serializers.IntegerField()
+    most_used_tags = serializers.ListField(child=serializers.CharField())
+    new_followers = serializers.IntegerField()
+    likes_received = serializers.IntegerField()
+    badges_earned = serializers.ListField(child=serializers.CharField())
+
+
+# ============================================================
 #                     SOCIAL FEED
-# =============================================================
+# ============================================================
 
 class SocialFeedView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
@@ -50,18 +61,15 @@ class SocialFeedView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-
-        # Show posts from user + people they follow
-        following_ids = user.following.values_list("following_user_id", flat=True)
-
+        following_ids = user.following.values_list("following_id", flat=True)
         return Post.objects.filter(
             user__id__in=list(following_ids) + [user.id]
         ).order_by("-created_at")
 
 
-# =============================================================
+# ============================================================
 #                     USER ACHIEVEMENTS
-# =============================================================
+# ============================================================
 
 class UserAchievementsView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
@@ -71,9 +79,9 @@ class UserAchievementsView(generics.ListAPIView):
         return UserAchievement.objects.filter(user=self.request.user)
 
 
-# =============================================================
+# ============================================================
 #                     YEARLY STATS VIEW
-# =============================================================
+# ============================================================
 
 class YearlyStatsView(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated]
@@ -84,12 +92,16 @@ class YearlyStatsView(generics.RetrieveAPIView):
         return YearlyStats.objects.filter(user=self.request.user)
 
 
-# =============================================================
-#                     YEARLY WRAP (SPOTIFY LIKE)
-# =============================================================
+# ============================================================
+#                     YEARLY WRAP (SPOTIFY-LIKE)
+# ============================================================
 
 class GenerateYearlyWrapView(generics.GenericAPIView):
+    """
+    Returns a formatted "yearly wrap" for the given year.
+    """
     permission_classes = [IsAuthenticated]
+    serializer_class = YearlyWrapSerializer  # <-- FIXED: serializer added
 
     def get(self, request, year):
         user = request.user
@@ -112,4 +124,7 @@ class GenerateYearlyWrapView(generics.GenericAPIView):
             "badges_earned": stats.badges_earned,
         }
 
-        return Response(wrap_data, status=200)
+        # Validate + serialize response (so Spectacular can see schema)
+        serializer = self.get_serializer(wrap_data)
+        return Response(serializer.data, status=200)
+

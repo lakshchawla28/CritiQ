@@ -1,12 +1,13 @@
 from rest_framework import serializers
-from apps.authentication.models import User
-from apps.movies.serializers import MovieSerializer
+from drf_spectacular.utils import extend_schema_field
+
 from .models import Review, ReviewLike, ReviewComment, ReviewRepost
+from apps.movies.serializers import MovieSerializer
 
 
-# ---------------------------------------------------------------
-# Basic Serializers
-# ---------------------------------------------------------------
+# =====================================================================
+#                          LIKE SERIALIZER
+# =====================================================================
 
 class ReviewLikeSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField(read_only=True)
@@ -15,6 +16,10 @@ class ReviewLikeSerializer(serializers.ModelSerializer):
         model = ReviewLike
         fields = ["user", "created_at"]
 
+
+# =====================================================================
+#                          COMMENT SERIALIZER
+# =====================================================================
 
 class ReviewCommentSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField(read_only=True)
@@ -32,11 +37,15 @@ class ReviewCommentSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+    @extend_schema_field(serializers.ListSerializer(child=serializers.DictField()))
     def get_replies(self, obj):
-        """Return nested replies."""
-        replies = obj.replies.all()
-        return ReviewCommentSerializer(replies, many=True).data
+        queryset = obj.replies.all()
+        return ReviewCommentSerializer(queryset, many=True).data
 
+
+# =====================================================================
+#                          REPOST SERIALIZER
+# =====================================================================
 
 class ReviewRepostSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField(read_only=True)
@@ -46,15 +55,13 @@ class ReviewRepostSerializer(serializers.ModelSerializer):
         fields = ["id", "user", "comment", "created_at"]
 
 
-# ---------------------------------------------------------------
-# Review Serializers
-# ---------------------------------------------------------------
+# =====================================================================
+#                          FULL REVIEW SERIALIZER
+# =====================================================================
 
 class ReviewSerializer(serializers.ModelSerializer):
-    """Full Review + nested comments + likes count only."""
     user = serializers.StringRelatedField(read_only=True)
     movie = MovieSerializer(read_only=True)
-
     likes = ReviewLikeSerializer(many=True, read_only=True)
     comments = ReviewCommentSerializer(many=True, read_only=True)
     reposts = ReviewRepostSerializer(many=True, read_only=True)
@@ -81,8 +88,11 @@ class ReviewSerializer(serializers.ModelSerializer):
         ]
 
 
+# =====================================================================
+#                          LIGHTWEIGHT LIST SERIALIZER
+# =====================================================================
+
 class ReviewListSerializer(serializers.ModelSerializer):
-    """Lightweight serializer for list endpoints."""
     user = serializers.StringRelatedField(read_only=True)
     movie = MovieSerializer(read_only=True)
 
@@ -102,8 +112,11 @@ class ReviewListSerializer(serializers.ModelSerializer):
         ]
 
 
+# =====================================================================
+#                          CREATE REVIEW
+# =====================================================================
+
 class CreateReviewSerializer(serializers.ModelSerializer):
-    """Serializer used for creating a review."""
     class Meta:
         model = Review
         fields = [
@@ -112,40 +125,26 @@ class CreateReviewSerializer(serializers.ModelSerializer):
             "review_text",
             "contains_spoilers",
             "tags",
-            "privacy"
+            "privacy",
         ]
 
     def validate(self, data):
-        """Ensure user cannot review the same movie twice."""
         user = self.context["request"].user
-        movie = data.get("movie")
+        movie = data["movie"]
 
-        from .models import Review
         if Review.objects.filter(user=user, movie=movie).exists():
-            raise serializers.ValidationError(
-                "You have already reviewed this movie."
-            )
+            raise serializers.ValidationError("You have already reviewed this movie.")
 
         return data
 
     def create(self, validated_data):
-        """Attach logged-in user automatically."""
         user = self.context["request"].user
         return Review.objects.create(user=user, **validated_data)
 
 
-# ---------------------------------------------------------------
-# Like Serializer
-# ---------------------------------------------------------------
-
-class LikeReviewSerializer(serializers.Serializer):
-    """No fields needed — only validates action."""
-    action = serializers.ChoiceField(choices=["like", "unlike"])
-
-
-# ---------------------------------------------------------------
-# Comment Serializer
-# ---------------------------------------------------------------
+# =====================================================================
+#                          COMMENT CREATION
+# =====================================================================
 
 class CreateCommentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -155,16 +154,12 @@ class CreateCommentSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = self.context["request"].user
         review = self.context["review"]
-        return ReviewComment.objects.create(
-            user=user,
-            review=review,
-            **validated_data
-        )
+        return ReviewComment.objects.create(user=user, review=review, **validated_data)
 
 
-# ---------------------------------------------------------------
-# Repost Serializer
-# ---------------------------------------------------------------
+# =====================================================================
+#                          REPOST CREATION
+# =====================================================================
 
 class CreateRepostSerializer(serializers.ModelSerializer):
     class Meta:
@@ -172,20 +167,21 @@ class CreateRepostSerializer(serializers.ModelSerializer):
         fields = ["comment"]
 
     def validate(self, data):
-        """Ensure user cannot repost same review twice."""
         user = self.context["request"].user
         review = self.context["review"]
 
         if ReviewRepost.objects.filter(user=user, original_review=review).exists():
             raise serializers.ValidationError("You already reposted this review.")
+
         return data
 
     def create(self, validated_data):
         user = self.context["request"].user
         review = self.context["review"]
-
         return ReviewRepost.objects.create(
             user=user,
             original_review=review,
             **validated_data
         )
+
+
